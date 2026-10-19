@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BloomPOS - ระบบร้านดอกไม้ (Sprint 0 Interactive Prototype)</title>
+  <!-- Google Fonts: Prompt & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'Outfit', 'sans-serif'],
+          },
+          colors: {
+            petal: { 500: '#ea2a5b', 600: '#e11d48' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #FAF8F5;
+      font-family: 'Prompt', 'Outfit', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .glass-header {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+    }
+    button, a, input, select {
+      min-height: 44px;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-24 text-stone-800">
+
+  <!-- 1. Header with Role Switcher -->
+  <header class="sticky top-0 z-30 glass-header border-b border-stone-200/80 px-4 py-3 sm:px-6">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-rose-400 flex items-center justify-center text-white shadow-md shadow-rose-500/20">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-base sm:text-lg tracking-tight text-stone-900 leading-tight">
+              Bloom<span class="text-rose-500">POS</span>
+            </span>
+            <span class="text-[11px] font-semibold bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full border border-rose-200/60">
+              Sprint 0
+            </span>
+          </div>
+          <p class="text-xs text-stone-500 font-medium">
+            <span id="currentDateText">15 ต.ค. 2569</span> • <span class="text-emerald-600 font-semibold">● ซิงค์สด (Realtime)</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Role Switcher -->
+      <div class="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-medium">
+        <button id="btnRoleOwner" onclick="switchRole('owner')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-rose-600 shadow-sm font-semibold transition-all">
+          <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+          <span>เจ้าของร้าน</span>
+        </button>
+        <button id="btnRoleStaff" onclick="switchRole('staff')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-stone-600 hover:text-stone-900 transition-all">
+          <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          <span>พนักงาน</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. Main Content Container -->
+  <main class="max-w-5xl mx-auto px-4 py-4 sm:px-6 space-y-5">
+    
+    <!-- Screen: TODAY (ภาพรวมวันนี้) -->
+    <section id="screenToday" class="space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight flex items-center gap-2">
+            <span>ภาพรวมวันนี้ (Today)</span>
+            <span id="badgeTotalOrders" class="text-xs bg-rose-100 text-rose-700 font-semibold px-2.5 py-0.5 rounded-full">
+              3 ออเดอร์
+            </span>
+          </h1>
+          <p class="text-xs text-stone-500">คิวจัดช่อดอกไม้ นัดรับ และจัดส่ง</p>
+        </div>
+
+        <button onclick="openNewOrderModal()" class="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all">
+          <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
+          <span>เปิดบิลใหม่</span>
+        </button>
+      </div>
+
+      <!-- Stat Cards Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
+        <!-- Revenue Card (Owner Only) -->
+        <div class="col-span-2 lg:col-span-1 bg-gradient-to-br from-rose-50 to-orange-50/40 border border-rose-200/70 p-3.5 rounded-2xl flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-rose-700 font-medium">
+            <span>ยอดรับเงินวันนี้</span>
+            <i data-lucide="dollar-sign" class="w-4 h-4 text-rose-600"></i>
+          </div>
+          <div class="my-1.5">
+            <span id="todayRevenueDisplay" class="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
+              ฿2,490
+            </span>
+            <span id="staffRevenueHiddenNotice" class="hidden text-xs font-semibold text-stone-400 flex items-center gap-1 py-1">
+              <i data-lucide="eye-off" class="w-4 h-4"></i> ซ่อนเฉพาะเจ้าของ
+            </span>
+          </div>
+          <div id="revenueSubtext" class="text-[11px] text-rose-600/80">นับรวมเงินสด & พร้อมเพย์</div>
+        </div>
+
+        <!-- Unpaid -->
+        <div onclick="setFilter('unpaid')" class="cursor-pointer bg-white border border-stone-200/80 hover:border-rose-200 p-3.5 rounded-2xl flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between text-xs text-rose-700 font-medium">
+            <span>ค้างชำระ/มัดจำ</span>
+            <i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i>
+          </div>
+          <div class="my-1.5">
+            <span id="statUnpaidCount" class="text-xl sm:text-2xl font-bold text-rose-600">1</span>
+          </div>
+          <div class="text-[11px] text-stone-500">รอเคลียร์ยอด</div>
+        </div>
+
+        <!-- Arranging -->
+        <div onclick="setFilter('arranging')" class="cursor-pointer bg-white border border-stone-200/80 hover:border-purple-200 p-3.5 rounded-2xl flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between text-xs text-purple-700 font-medium">
+            <span>กำลังจัดช่อ</span>
+            <i data-lucide="sparkles" class="w-4 h-4 text-purple-600"></i>
+          </div>
+          <div class="my-1.5">
+            <span id="statArrangingCount" class="text-xl sm:text-2xl font-bold text-purple-700">1</span>
+          </div>
+          <div class="text-[11px] text-stone-500">ช่างกำลังจัดทำ</div>
+        </div>
+
+        <!-- Ready -->
+        <div onclick="setFilter('ready')" class="cursor-pointer bg-white border border-stone-200/80 hover:border-blue-200 p-3.5 rounded-2xl flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between text-xs text-blue-700 font-medium">
+            <span>พร้อมรับ / รอส่ง</span>
+            <i data-lucide="package-check" class="w-4 h-4 text-blue-600"></i>
+          </div>
+          <div class="my-1.5">
+            <span id="statReadyCount" class="text-xl sm:text-2xl font-bold text-blue-700">1</span>
+          </div>
+          <div class="text-[11px] text-stone-500">จัดเสร็จแล้วหน้าร้าน</div>
+        </div>
+
+        <!-- Done -->
+        <div onclick="setFilter('done')" class="cursor-pointer bg-white border border-stone-200/80 hover:border-emerald-200 p-3.5 rounded-2xl flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between text-xs text-emerald-700 font-medium">
+            <span>ส่งมอบเรียบร้อย</span>
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+          </div>
+          <div class="my-1.5">
+            <span id="statDoneCount" class="text-xl sm:text-2xl font-bold text-emerald-700">0</span>
+          </div>
+          <div class="text-[11px] text-stone-500">สำเร็จวันนี้</div>
+        </div>
+      </div>
+
+      <!-- Filter Tabs Bar -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-medium">
+        <button onclick="setFilter('all')" id="tabAll" class="px-3.5 py-2 rounded-xl bg-stone-900 text-white font-semibold">
+          ทั้งหมด
+        </button>
+        <button onclick="setFilter('unpaid')" id="tabUnpaid" class="px-3.5 py-2 rounded-xl bg-white border border-rose-200 text-rose-700 hover:bg-rose-50">
+          🚨 ยังไม่จ่าย
+        </button>
+        <button onclick="setFilter('arranging')" id="tabArranging" class="px-3.5 py-2 rounded-xl bg-white border border-purple-200 text-purple-700 hover:bg-purple-50">
+          💐 กำลังจัดช่อ
+        </button>
+        <button onclick="setFilter('ready')" id="tabReady" class="px-3.5 py-2 rounded-xl bg-white border border-blue-200 text-blue-700 hover:bg-blue-50">
+          📦 พร้อมรับ/ส่ง
+        </button>
+        <button onclick="setFilter('done')" id="tabDone" class="px-3.5 py-2 rounded-xl bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+          ✅ ส่งมอบแล้ว
+        </button>
+      </div>
+
+      <!-- Order Cards List Container -->
+      <div id="orderCardsContainer" class="space-y-3.5">
+        <!-- Rendered via Javascript -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 3. Bottom Nav Bar -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-stone-200/90 pb-[env(safe-area-inset-bottom)]">
+    <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-around relative">
+      <button onclick="showScreen('today')" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-600 font-semibold">
+        <i data-lucide="calendar" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px]">วันนี้</span>
+      </button>
+
+      <button onclick="showScreen('today')" class="flex flex-col items-center justify-center flex-1 py-1 text-stone-500 hover:text-stone-800">
+        <i data-lucide="list-ordered" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px]">ออเดอร์</span>
+      </button>
+
+      <div class="flex-1 flex justify-center -mt-6">
+        <button onclick="openNewOrderModal()" class="w-14 h-14 rounded-full bg-gradient-to-tr from-rose-600 to-rose-400 text-white flex items-center justify-center shadow-lg shadow-rose-500/30 hover:scale-105 active:scale-95 transition-all">
+          <i data-lucide="plus" class="w-7 h-7 stroke-[2.5]"></i>
+        </button>
+      </div>
+
+      <button id="navAccountingBtn" onclick="handleAccountingClick()" class="flex flex-col items-center justify-center flex-1 py-1 text-stone-500 hover:text-stone-800">
+        <i data-lucide="bar-chart-3" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px]">บัญชีร้าน</span>
+      </button>
+
+      <button onclick="alert('หน้าตั้งค่าแคตตาล็อกสินค้าและพนักงาน')" class="flex flex-col items-center justify-center flex-1 py-1 text-stone-500 hover:text-stone-800">
+        <i data-lucide="settings" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px]">ตั้งค่า</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 4. Payment Modal -->
+  <div id="paymentModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base" id="paymentModalTitle">บันทึกรับเงิน</h3>
+          <p class="text-xs text-stone-500" id="paymentModalSub">ระบุยอดที่ได้รับ</p>
+        </div>
+        <button onclick="closePaymentModal()" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-stone-700">จำนวนเงินที่ได้รับ (บาท)</label>
+        <input type="number" id="inputPayAmount" class="w-full px-3.5 py-2.5 text-lg font-bold border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-500">
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-stone-700">วิธีชำระ</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button type="button" onclick="selectPayMethod('promptpay')" id="payMethPromptPay" class="p-2.5 rounded-xl border bg-rose-50 border-rose-400 text-rose-700 font-semibold">พร้อมเพย์ QR</button>
+          <button type="button" onclick="selectPayMethod('cash')" id="payMethCash" class="p-2.5 rounded-xl border border-stone-200 text-stone-700">เงินสดหน้าร้าน</button>
+        </div>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <button onclick="closePaymentModal()" class="flex-1 py-2.5 border border-stone-200 rounded-xl text-stone-600 text-xs font-semibold">ยกเลิก</button>
+        <button onclick="submitPayment()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm">ยืนยันรับเงิน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. New Order Modal (Quick Wizard) -->
+  <div id="newOrderModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base">เปิดบิลออเดอร์ใหม่</h3>
+          <p class="text-xs text-stone-500">บันทึกช่อดอกไม้และข้อมูลจัดส่ง</p>
+        </div>
+        <button onclick="closeNewOrderModal()" class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-semibold text-stone-700">ชื่อลูกค้า / เบอร์โทร</label>
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <input type="text" id="newCustName" placeholder="ชื่อลูกค้า (เช่น คุณมินต์)" class="px-3 py-2 border rounded-xl">
+            <input type="tel" id="newCustPhone" placeholder="เบอร์โทร (เช่น 089-xxx-xxxx)" class="px-3 py-2 border rounded-xl">
+          </div>
+        </div>
+
+        <div>
+          <label class="font-semibold text-stone-700">เลือกสินค้า/ช่อดอกไม้</label>
+          <select id="newProductSelect" class="w-full px-3 py-2 border rounded-xl bg-white mt-1">
+            <option value="590|ช่อกุหลาบแดง (Size S)">ช่อกุหลาบแดง Size S - ฿590</option>
+            <option value="990|ช่อกุหลาบแดง (Size M)" selected>ช่อกุหลาบแดง Size M - ฿990</option>
+            <option value="1590|ช่อกุหลาบแดง (Size L)">ช่อกุหลาบแดง Size L - ฿1,590</option>
+            <option value="850|ช่อทานตะวัน (Size M)">ช่อดอกทานตะวัน Size M - ฿850</option>
+            <option value="1890|ช่อลิลลี่ขาวหรูหรา (Size L)">ช่อลิลลี่ขาวหรูหรา - ฿1,890</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-semibold text-stone-700">การส่งมอบ & เวลานัด</label>
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <select id="newFulfillmentType" class="px-3 py-2 border rounded-xl bg-white">
+              <option value="pickup">ลูกค้ามารับเองที่ร้าน</option>
+              <option value="delivery">บริการจัดส่ง (Delivery)</option>
+            </select>
+            <input type="text" id="newDueTime" value="วันนี้ 15:00 น." class="px-3 py-2 border rounded-xl">
+          </div>
+        </div>
+
+        <div>
+          <label class="font-semibold text-stone-700">ข้อความการ์ดอวยพร</label>
+          <textarea id="newCardMsg" placeholder="เช่น ขอแสดงความยินดีด้วยนะคะ..." rows="2" class="w-full px-3 py-2 border rounded-xl bg-amber-50/50 text-amber-950 mt-1"></textarea>
+        </div>
+
+        <div>
+          <label class="font-semibold text-stone-700">การชำระเงินเริ่มต้น</label>
+          <select id="newPaymentStatus" class="w-full px-3 py-2 border rounded-xl bg-white mt-1">
+            <option value="paid">จ่ายครบแล้ว (โอนพร้อมเพย์/เงินสด)</option>
+            <option value="partial">มัดจำแล้วบางส่วน</option>
+            <option value="unpaid">ยังไม่จ่าย (รอโอน)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <button onclick="closeNewOrderModal()" class="flex-1 py-2.5 border rounded-xl text-stone-600 text-xs font-semibold">ยกเลิก</button>
+        <button onclick="submitNewOrder()" class="flex-1 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-semibold shadow-sm">บันทึกเปิดบิล</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let currentRole = 'owner';
+    let currentFilter = 'all';
+    let activePaymentOrderId = null;
+    let selectedPaymentMethod = 'promptpay';
+
+    let orders = [
+      {
+        id: 'ord-1',
+        order_no: '261015-001',
+        customer_name: 'คุณณภัทร',
+        customer_phone: '089-111-2233',
+        recipient_name: 'คุณฟ้า พิมพ์ประภา',
+        recipient_phone: '089-999-8877',
+        channel: 'line',
+        channel_name: 'LINE OA',
+        channel_badge: 'bg-emerald-100 text-emerald-800',
+        due_text: 'วันนี้ 14:00 น.',
+        item_name: 'ช่อกุหลาบแดงคลาสสิก (Size L)',
+        qty: 1,
+        total: 1690,
+        paid: 1690,
+        payment_status: 'paid',
+        fulfillment_status: 'arranging',
+        card_message: 'Happy Birthday นะคนเก่ง มีความสุขมากๆ ในทุกวันนะค้าบ ♥'
+      },
+      {
+        id: 'ord-2',
+        order_no: '261015-002',
+        customer_name: 'คุณพิมลดา',
+        customer_phone: '092-444-5566',
+        recipient_name: 'คุณพิมลดา',
+        recipient_phone: '092-444-5566',
+        channel: 'walk_in',
+        channel_name: 'หน้าร้าน',
+        channel_badge: 'bg-amber-100 text-amber-800',
+        due_text: 'วันนี้ 12:30 น.',
+        item_name: 'ช่อดอกทานตะวันสดใส (Size M)',
+        qty: 1,
+        total: 800,
+        paid: 800,
+        payment_status: 'paid',
+        fulfillment_status: 'ready',
+        card_message: 'ยินดีกับความสำเร็จด้วยนะ!'
+      },
+      {
+        id: 'ord-3',
+        order_no: '261015-003',
+        customer_name: 'คุณกิตติศักดิ์',
+        customer_phone: '081-777-8899',
+        recipient_name: 'คุณกิตติศักดิ์',
+        recipient_phone: '081-777-8899',
+        channel: 'facebook',
+        channel_name: 'Facebook',
+        channel_badge: 'bg-blue-100 text-blue-800',
+        due_text: 'วันนี้ 17:30 น.',
+        item_name: 'ช่อลิลลี่ขาวหรูหรา (Size L)',
+        qty: 1,
+        total: 2040,
+        paid: 0,
+        payment_status: 'unpaid',
+        fulfillment_status: 'new',
+        card_message: 'Happy 3rd Anniversary! ขอบคุณที่อยู่เคียงข้างกันเสมอ'
+      }
+    ];
+
+    function renderOrders() {
+      const container = document.getElementById('orderCardsContainer');
+      container.innerHTML = '';
+
+      const filtered = orders.filter(o => {
+        if (currentFilter === 'unpaid') return o.payment_status === 'unpaid' || o.payment_status === 'partial';
+        if (currentFilter === 'arranging') return o.fulfillment_status === 'arranging';
+        if (currentFilter === 'ready') return o.fulfillment_status === 'ready';
+        if (currentFilter === 'done') return o.fulfillment_status === 'done';
+        return true;
+      });
+
+      // Update counters
+      document.getElementById('badgeTotalOrders').textContent = `${orders.length} ออเดอร์`;
+      document.getElementById('statUnpaidCount').textContent = orders.filter(o => o.payment_status !== 'paid').length;
+      document.getElementById('statArrangingCount').textContent = orders.filter(o => o.fulfillment_status === 'arranging').length;
+      document.getElementById('statReadyCount').textContent = orders.filter(o => o.fulfillment_status === 'ready').length;
+      document.getElementById('statDoneCount').textContent = orders.filter(o => o.fulfillment_status === 'done').length;
+
+      const totalPaidToday = orders.reduce((sum, o) => sum + (o.paid || 0), 0);
+      document.getElementById('todayRevenueDisplay').textContent = `฿${totalPaidToday.toLocaleString()}`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-stone-200 p-8 text-center text-xs text-stone-500">
+            ไม่มีออเดอร์ในหมวดนี้
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(order => {
+        const pBadge = order.payment_status === 'paid' 
+          ? '<span class="text-xs font-semibold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">จ่ายแล้ว</span>'
+          : '<span class="text-xs font-semibold px-2.5 py-1 rounded-full border bg-rose-50 text-rose-700 border-rose-200">ยังไม่จ่าย</span>';
+
+        let fBadgeText = 'ออเดอร์ใหม่';
+        let fBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+        let actionBtn = `<button onclick="advanceStatus('${order.id}', 'arranging')" class="text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-xl shadow-sm">เริ่มจัดช่อ</button>`;
+
+        if (order.fulfillment_status === 'arranging') {
+          fBadgeText = 'กำลังจัดช่อ';
+          fBadgeClass = 'bg-purple-50 text-purple-700 border-purple-200';
+          actionBtn = `<button onclick="advanceStatus('${order.id}', 'ready')" class="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl shadow-sm">จัดเสร็จ พร้อมส่ง/รับ</button>`;
+        } else if (order.fulfillment_status === 'ready') {
+          fBadgeText = 'พร้อมรับ/ส่ง';
+          fBadgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
+          actionBtn = `<button onclick="advanceStatus('${order.id}', 'done')" class="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl shadow-sm">ส่งมอบสำเร็จ</button>`;
+        } else if (order.fulfillment_status === 'done') {
+          fBadgeText = 'ส่งมอบสำเร็จ';
+          fBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+          actionBtn = `<span class="text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-xl">✓ เสร็จสิ้น</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-hidden flex flex-col";
+        card.innerHTML = `
+          <div class="p-4 pb-3 border-b border-stone-100 flex items-center justify-between gap-2 bg-stone-50/40">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-stone-900 text-base">#${order.order_no}</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${order.channel_badge}">${order.channel_name}</span>
+              <span class="text-xs text-stone-500 font-medium">• นัดหมาย: ${order.due_text}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              ${pBadge}
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${fBadgeClass}">${fBadgeText}</span>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-3">
+            <div class="flex justify-between items-start text-xs">
+              <div>
+                <span class="font-semibold text-stone-800 text-sm block">${order.recipient_name}</span>
+                <span class="text-emerald-600 font-medium">📞 ${order.recipient_phone}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-stone-400 block">ยอดสุทธิ</span>
+                <span class="text-base font-bold text-stone-900">฿${order.total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div class="bg-stone-50 rounded-xl p-2.5 text-xs flex justify-between items-center">
+              <span class="font-medium text-stone-700">💐 ${order.item_name}</span>
+              <span class="text-stone-500 font-semibold">฿${order.total.toLocaleString()}</span>
+            </div>
+
+            ${order.card_message ? `
+              <div class="bg-amber-50/60 border border-amber-200/60 rounded-xl p-2.5 text-xs text-amber-900 italic">
+                💌 "${order.card_message}"
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="px-4 py-3 bg-stone-50/80 border-t border-stone-100 flex items-center justify-between gap-2">
+            <span class="text-xs text-stone-400">อัปเดตสด</span>
+            <div class="flex items-center gap-2">
+              ${order.payment_status !== 'paid' ? `
+                <button onclick="openPaymentModal('${order.id}', ${order.total - order.paid})" class="text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3 py-1.5 rounded-xl">
+                  รับเงิน (฿${(order.total - order.paid).toLocaleString()})
+                </button>
+              ` : ''}
+              ${actionBtn}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function switchRole(role) {
+      currentRole = role;
+      const btnOwner = document.getElementById('btnRoleOwner');
+      const btnStaff = document.getElementById('btnRoleStaff');
+      const revDisplay = document.getElementById('todayRevenueDisplay');
+      const staffNotice = document.getElementById('staffRevenueHiddenNotice');
+      const revSubtext = document.getElementById('revenueSubtext');
+      const navAccBtn = document.getElementById('navAccountingBtn');
+
+      if (role === 'owner') {
+        btnOwner.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-rose-600 shadow-sm font-semibold transition-all";
+        btnStaff.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-stone-600 hover:text-stone-900 transition-all";
+        revDisplay.classList.remove('hidden');
+        staffNotice.classList.add('hidden');
+        revSubtext.textContent = "นับรวมเงินสด & พร้อมเพย์";
+        navAccBtn.classList.remove('opacity-40');
+      } else {
+        btnStaff.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-emerald-600 shadow-sm font-semibold transition-all";
+        btnOwner.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-stone-600 hover:text-stone-900 transition-all";
+        revDisplay.classList.add('hidden');
+        staffNotice.classList.remove('hidden');
+        revSubtext.textContent = "โหมดพนักงาน (ความปลอดภัย)";
+        navAccBtn.classList.add('opacity-40');
+      }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      const tabs = ['all', 'unpaid', 'arranging', 'ready', 'done'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (btn) {
+          if (t === filter) {
+            btn.className = "px-3.5 py-2 rounded-xl bg-stone-900 text-white font-semibold";
+          } else {
+            btn.className = "px-3.5 py-2 rounded-xl bg-white border border-stone-200 text-stone-600 hover:bg-stone-50";
+          }
+        }
+      });
+      renderOrders();
+    }
+
+    function advanceStatus(orderId, nextStatus) {
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        order.fulfillment_status = nextStatus;
+        renderOrders();
+      }
+    }
+
+    function openPaymentModal(orderId, remaining) {
+      activePaymentOrderId = orderId;
+      document.getElementById('inputPayAmount').value = remaining;
+      document.getElementById('paymentModal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.add('hidden');
+    }
+
+    function selectPayMethod(method) {
+      selectedPaymentMethod = method;
+      const pp = document.getElementById('payMethPromptPay');
+      const cash = document.getElementById('payMethCash');
+      if (method === 'promptpay') {
+        pp.className = "p-2.5 rounded-xl border bg-rose-50 border-rose-400 text-rose-700 font-semibold";
+        cash.className = "p-2.5 rounded-xl border border-stone-200 text-stone-700";
+      } else {
+        cash.className = "p-2.5 rounded-xl border bg-rose-50 border-rose-400 text-rose-700 font-semibold";
+        pp.className = "p-2.5 rounded-xl border border-stone-200 text-stone-700";
+      }
+    }
+
+    function submitPayment() {
+      const amount = parseFloat(document.getElementById('inputPayAmount').value) || 0;
+      const order = orders.find(o => o.id === activePaymentOrderId);
+      if (order && amount > 0) {
+        order.paid = (order.paid || 0) + amount;
+        if (order.paid >= order.total) {
+          order.payment_status = 'paid';
+        } else {
+          order.payment_status = 'partial';
+        }
+      }
+      closePaymentModal();
+      renderOrders();
+    }
+
+    function openNewOrderModal() {
+      document.getElementById('newOrderModal').classList.remove('hidden');
+    }
+
+    function closeNewOrderModal() {
+      document.getElementById('newOrderModal').classList.add('hidden');
+    }
+
+    function submitNewOrder() {
+      const name = document.getElementById('newCustName').value.trim() || 'ลูกค้าหน้าร้าน';
+      const phone = document.getElementById('newCustPhone').value.trim() || '08x-xxx-xxxx';
+      const [priceStr, prodName] = document.getElementById('newProductSelect').value.split('|');
+      const price = parseFloat(priceStr);
+      const due = document.getElementById('newDueTime').value;
+      const card = document.getElementById('newCardMsg').value.trim();
+      const pStatus = document.getElementById('newPaymentStatus').value;
+
+      const newId = 'ord-' + Date.now();
+      const count = orders.length + 1;
+      const orderNo = `261015-00${count}`;
+
+      orders.unshift({
+        id: newId,
+        order_no: orderNo,
+        customer_name: name,
+        customer_phone: phone,
+        recipient_name: name,
+        recipient_phone: phone,
+        channel: 'walk_in',
+        channel_name: 'หน้าร้าน',
+        channel_badge: 'bg-amber-100 text-amber-800',
+        due_text: due,
+        item_name: prodName,
+        qty: 1,
+        total: price,
+        paid: pStatus === 'paid' ? price : 0,
+        payment_status: pStatus,
+        fulfillment_status: 'new',
+        card_message: card
+      });
+
+      closeNewOrderModal();
+      setFilter('all');
+      alert(`สร้างออเดอร์ #${orderNo} สำเร็จ!`);
+    }
+
+    function handleAccountingClick() {
+      if (currentRole !== 'owner') {
+        alert('เฉพาะเจ้าของร้าน (Owner) เท่านั้นที่เข้าถึงข้อมูลบัญชีได้');
+      } else {
+        alert('เข้าสู่หน้ารายงานสรุปบัญชี: ยอดขายรวม ฿2,490 / ต้นทุนดอกไม้ ฿850 / กำไรสุทธิ ฿1,640');
+      }
+    }
+
+    // Init
+    window.onload = () => {
+      lucide.createIcons();
+      renderOrders();
+    };
+  </script>
+</body>
+</html>

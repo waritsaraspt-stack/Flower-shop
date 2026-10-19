@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 35 40% 98%; /* Warm floral porcelain background #FAF8F5 */
+    --foreground: 220 20% 14%; /* Deep charcoal #1E232A */
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 14%;
+
+    --primary: 345 82% 52%; /* Rose bloom #ea2a5b */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 145 28% 94%; /* Gentle sage leaf #e9f3ec */
+    --secondary-foreground: 145 40% 25%;
+
+    --muted: 35 20% 92%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 345 90% 96%; /* Soft petal blush */
+    --accent-foreground: 345 82% 40%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 35 25% 90%;
+    --input: 35 25% 90%;
+    --ring: 345 82% 52%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 220 25% 10%;
+    --foreground: 35 20% 96%;
+
+    --card: 220 24% 14%;
+    --card-foreground: 35 20% 96%;
+
+    --popover: 220 24% 14%;
+    --popover-foreground: 35 20% 96%;
+
+    --primary: 345 80% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 145 20% 18%;
+    --secondary-foreground: 145 35% 85%;
+
+    --muted: 220 20% 18%;
+    --muted-foreground: 220 10% 65%;
+
+    --accent: 345 40% 20%;
+    --accent-foreground: 345 70% 85%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 345 80% 60%;
+  }
+}
+
+* {
+  border-color: hsl(var(--border));
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  font-family: 'Prompt', 'Outfit', sans-serif;
+  min-height: 100vh;
+}
+
+/* Glassmorphism effects */
+.glass-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-header {
+  background: rgba(23, 27, 34, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 9999px;
+}
+
+/* Mobile-first touch targets */
+button, a, input, select, textarea {
+  min-height: 44px;
+}
+
+/* Animated pulse for urgent orders */
+@keyframes softPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.animate-soft-pulse {
+  animation: softPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Print Styles for Bills and Receipts */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  header, nav, .no-print, button {
+    display: none !important;
+  }
+  #printableInvoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 10mm;
+    border: none !important;
+  }
+}
+
